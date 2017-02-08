@@ -4,11 +4,12 @@ package tk.dzrcc.analyzer;
  * Created by Maksim on 18.01.2017.
  */
 public class Code {
-    private static final String TO_STRING_PATTERN = "Сектор: %s;\nСложность: %s;\nПорядковый номер: %s.";
+    private static final String TO_STRING_PATTERN = "Сектор: %s\nСложность: %s\nПорядковый номер: %s";
+    private String code;
     private String value;
     private Integer sector;
     private String level;
-    private Integer numberInLevel;
+    private Integer numberInSector;
     private Boolean isGotten = false;
 
     public Code() {
@@ -19,11 +20,11 @@ public class Code {
         this.level = level;
     }
 
-    public Code(String value, String level, Integer sector, Integer numberInLevel) {
+    public Code(String value, String level, Integer sector, Integer numberInSector) {
         this.value = value;
         this.sector = sector;
         this.level = level;
-        this.numberInLevel = numberInLevel;
+        this.numberInSector = numberInSector;
     }
 
     public void setSector(Integer sector) {
@@ -50,12 +51,12 @@ public class Code {
         isGotten = gotten;
     }
 
-    public Integer getNumberInLevel() {
-        return numberInLevel;
+    public Integer getNumberInSector() {
+        return numberInSector;
     }
 
-    public void setNumberInLevel(Integer numberInLevel) {
-        this.numberInLevel = numberInLevel;
+    public void setNumberInSector(Integer numberInSector) {
+        this.numberInSector = numberInSector;
     }
 
     public String getValue() {
@@ -68,6 +69,29 @@ public class Code {
 
     @Override
     public String toString() {
-        return String.format(TO_STRING_PATTERN, sector, level, numberInLevel);
+        return String.format(TO_STRING_PATTERN, sector, level, numberInSector);
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Code)) return false;
+
+        Code code = (Code) o;
+
+        return getLevel() != null ? getLevel().equals(code.getLevel()) : code.getLevel() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return getLevel() != null ? getLevel().hashCode() : 0;
     }
 }

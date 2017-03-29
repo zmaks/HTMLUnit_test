@@ -1,4 +1,4 @@
-package tk.dzrcc.analyzer;
+package tk.dzrcc.entities;
 
 import java.util.Date;
 

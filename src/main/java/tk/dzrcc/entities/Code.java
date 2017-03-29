@@ -1,4 +1,4 @@
-package tk.dzrcc.analyzer;
+package tk.dzrcc.entities;
 
 /**
  * Created by Maksim on 18.01.2017.

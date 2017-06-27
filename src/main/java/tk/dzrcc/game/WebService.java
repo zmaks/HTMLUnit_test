@@ -41,12 +41,12 @@ public class WebService {
     }
 
     public HtmlPage getGamePage() throws IOException {
-        DefaultCredentialsProvider provider = new DefaultCredentialsProvider();
+        // TODO: 6/27/2017
+        /*DefaultCredentialsProvider provider = new DefaultCredentialsProvider();
         provider.addCredentials(gameLogin, gamePass);
         webClient.setCredentialsProvider(provider);
-        return webClient.getPage(gameUrl);
-
-        //return webClient.getPage("http://dzrcc.tk/test/222.html");
+        return webClient.getPage(gameUrl);*/
+        return webClient.getPage("http://dzrcc.tk/test/q/2.html");
     }
 
     public HtmlPage login() throws IOException, DozorBotException {

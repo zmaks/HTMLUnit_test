@@ -1,6 +1,7 @@
 package tk.dzrcc.game;
 
 import com.gargoylesoftware.htmlunit.html.*;
+import tk.dzrcc.TextConstants;
 import tk.dzrcc.entities.Code;
 import tk.dzrcc.entities.CodeResponse;
 import tk.dzrcc.entities.GottenCode;
@@ -40,9 +41,9 @@ public class Game {
         String message = "";
         try {
             webService.login();
-            message+="Авторизация прошла успешно.\n\n";
+            message+= TextConstants.SUCCESS_AUTH;
             gameLoad();
-            message+="Задание загружено. К бою готов!\uD83D\uDCAA";
+            message+= TextConstants.SUCCESS_LOADED;
         } catch (IOException | DozorBotException e) {
             e.printStackTrace();
             throw new DozorBotException(message +e.getMessage());
@@ -60,7 +61,7 @@ public class Game {
             e.printStackTrace();
             throw new DozorBotException(CANNOT_LOAD_PAGE);
         }
-        System.out.println(gamePage.getBody().asXml());
+        //System.out.println(gamePage.getBody().asXml());
         String taskNum = parseTaskNumber(gamePage);
         if (taskNum == null || taskNum.isEmpty())
             throw new DozorBotException(CANNOT_FIND_TASK_NUMBER);
@@ -96,15 +97,16 @@ public class Game {
             return new CodeResponse(e.getMessage(), null);
         }
 
+        String key = sysMessage.contains("Код не принят") ? NOT_TAKEN_CODE : TAKEN_CODE;
         if (inputCode == null) {
             GottenCode gottenCode = gottenCodes.stream()
                     .filter(x -> x.getCode().equals(code))
                     .findFirst()
                     .orElse(null);
-            return new CodeResponse(sysMessage, null, gottenCode);
+            return new CodeResponse(key+"\n"+sysMessage, null, gottenCode);
         } else {
             gottenCodes.add(new GottenCode(code, player, new Date()));
-            CodeResponse codeResponse = new CodeResponse(sysMessage, inputCode);
+            CodeResponse codeResponse = new CodeResponse(key+"\n"+sysMessage, inputCode);
             codeResponse.setLevelStat(getLevelStatistic(sectors, inputCode.getSector(), inputCode.getLevel()));
             codeResponse.setSectorStat(getSectorStatistic(sectors, inputCode.getSector()));
             return codeResponse;
@@ -121,7 +123,7 @@ public class Game {
         }
         String response;
         try {
-            response = parseTime(page);
+            response = "⏱"+parseTime(page);
         } catch (DozorBotException e) {
             return e.getMessage();
         }
@@ -136,9 +138,9 @@ public class Game {
             return e.getMessage();
         }
         StringBuilder response = new StringBuilder();
-        response.append("Инфа по заданию №");
+        response.append("ℹ Задание №");
         response.append(currentTaskNumber);
-        response.append("\n");
+        response.append(" ℹ\n");
 
         for (int i = 0; i < sectors.size(); i++) {
             if (sectors.size() != 1) {
@@ -151,15 +153,20 @@ public class Game {
             for (int j = 0; j < sectors.get(i).size(); j++) {
                 ArrayList<Code> codes = sectors.get(i);
                 response.append((j+1));
-                response.append(") ");
+                response.append(". ");
                 Code curCode = codes.get(j);
                 if (curCode.getGotten())
-                    response.append(curCode.getCode());
+                    response.append(TAKEN_CODE);
                 else
-                    response.append(NOT_TAKEN);
+                    response.append(NOT_TAKEN_CODE);
                 response.append(" (");
                 response.append(curCode.getLevel());
-                response.append(")\n");
+                response.append(")");
+                if (curCode.getCode() != null){
+                    response.append(" - ");
+                    response.append(curCode.getCode());
+                }
+                response.append("\n");
             }
             List<String> list = sectors.get(i)
                     .stream()
@@ -167,7 +174,7 @@ public class Game {
                     .map(Code::getLevel)
                     .collect(Collectors.toList());
             if (list.size()>1) {
-                response.append("По уровням сложности:\n");
+                response.append("По уровням опасности:\n");
                 for (int j = 0; j < list.size(); j++) {
                     response.append("(");
                     response.append(list.get(j));

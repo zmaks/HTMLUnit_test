@@ -1,12 +1,11 @@
 package tk.dzrcc.game;
 
+import tk.dzrcc.CodeHandler;
 import tk.dzrcc.entities.Code;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static tk.dzrcc.TextConstants.DEFAULT_CODE;
 
 /**
  * Created by Maksim on 29.03.2017.
@@ -48,13 +47,10 @@ public class CodesAnalyzer {
                 for(int code = 0; code < curSector.size(); code++){
                     currentCode = sectors.get(sector).get(code);
                     parsedCode = parsedSectors.get(sector).get(code);
-                    if (parsedCode.getValue().length()>4 && !currentCode.getGotten()){
-                        currentCode.setGotten(true);
+                    if (CodeHandler.isTakenCode(parsedCode.getValue()) && !currentCode.getGotten()){
+                        CodeHandler.setCodeAsGotten(currentCode, codeVal);
                         if (codeVal != null) {
-                            currentCode.setCode(codeVal);
                             found = true;
-                        } else {
-                            currentCode.setCode(DEFAULT_CODE);
                         }
                     }
                     if (found) break;

@@ -56,7 +56,7 @@ public class CodeResponse {
             result.append(code.toString());
         }
         if (levelStat != null && code != null) {
-            result.append("\nВзято ");
+            result.append("\n\nВзято ");
             result.append(code.getLevel());
             result.append(" сложности: ");
             result.append(levelStat);

@@ -45,7 +45,8 @@ public class WebService {
         provider.addCredentials(gameLogin, gamePass);
         webClient.setCredentialsProvider(provider);
         return webClient.getPage(gameUrl);
-        //return webClient.getPage("http://dzrcc.tk/");
+
+        //return webClient.getPage("http://dzrcc.tk/test/222.html");
     }
 
     public HtmlPage login() throws IOException, DozorBotException {
@@ -76,6 +77,7 @@ public class WebService {
 
     public HtmlPage inputCode(String code) throws IOException, DozorBotException {
         HtmlPage page = getGamePage();
+        //HtmlPage page = webClient.getPage("http://dzrcc.tk/test/2222.html");
         HtmlElement submit = null;
         List<HtmlForm> forms = page.getForms();
         int i = 0;

@@ -24,7 +24,7 @@ import java.util.regex.Matcher;
  */
 public class WardenService implements Runnable{
     private static final String OPEN_SPOILER_MESSAGE = "Открыт спойлер! Ща пришлю скрин...";
-    private static final String NEW_TASK_MESSAGE = "Выдано задание №\nЩа пришлю скрин.";
+    private static final String NEW_TASK_MESSAGE = "Выдано задание №";
     private static final String SPOILER_MESSAGE = "\nВ задании спойлер.";
     private WardenGame game;
     private WebDriver driver;
@@ -174,6 +174,7 @@ public class WardenService implements Runnable{
         if (withSpoiler) {
             message += SPOILER_MESSAGE;
         }
+        message += "\nЩа пришлю скрин...";
         bot.sendToTelegram(message);
         sendScreenshot(driver, "task" + taskNum);
     }

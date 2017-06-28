@@ -1,6 +1,7 @@
 package tk.dzrcc.telebot;
 
 import org.apache.commons.lang3.StringUtils;
+import org.telegram.telegrambots.api.methods.send.SendLocation;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.api.methods.send.SendSticker;
@@ -28,8 +29,11 @@ import static tk.dzrcc.TextConstants.NO_CONNECTION;
 public class DozorBot extends TelegramLongPollingBot {
     private Game game;
     private Long chatId;
-    private WardenService wardenService;
+    private Thread schedulerThread;
+    private String stopText = "";
+    //private WardenService wardenService;
 
+    private boolean pause = false;
     private static final Long ADMIN_CHAT_ID = 183375382L;
     //private static final String TOKEN = "182854264:AAGIoBFz0VfwAIlWJwHPplZ2nH-JKHDzfNQ";
     private static final String TOKEN = "370419998:AAHqy3bxteX5pg42QRSFkvITOB5WwbSm5Zk";
@@ -87,6 +91,18 @@ public class DozorBot extends TelegramLongPollingBot {
         }
     }
 
+    public void sendLinkToTelegram(String link){
+        SendMessage sendMessage = new SendMessage()
+                .setChatId(chatId)
+                .setText(link)
+                .enableWebPagePreview();
+        try {
+            sendMessage(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void sendToTelegram(String name, InputStream image){
         try {
             sendPhoto(new SendPhoto().setNewPhoto(name, image).setChatId(chatId));
@@ -96,11 +112,27 @@ public class DozorBot extends TelegramLongPollingBot {
         }
     }
 
+    public void sendToTelegram(Float lat, Float lng){
+        try {
+            sendLocation(new SendLocation()
+                    .setChatId(chatId)
+                    .setLatitude(lat)
+                    .setLongitude(lng)
+            );
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void handleAdminMessage(Message message) throws TelegramApiException {
         if (chatId == null) {
             sendMessage(new SendMessage()
                     .setChatId(ADMIN_CHAT_ID)
                     .setText("Ok"));
+            return;
+        }
+        if (message.hasText() && message.getText().contains("/stop")) {
+            stopText = message.getText().replace("/stop","");
             return;
         }
         if (message.hasText()) {
@@ -158,13 +190,17 @@ public class DozorBot extends TelegramLongPollingBot {
     }
 
     private void connectSelenium(String login, String pass){
-        wardenService = new WardenService(
+        if (schedulerThread != null && schedulerThread.isAlive()){
+            schedulerThread.stop();
+            schedulerThread = null;
+        }
+        WardenService wardenService = new WardenService(
                 AUTH_LINK,
                 login,
                 pass,
                 this
         );
-        Thread schedulerThread = new Thread(wardenService);
+        schedulerThread = new Thread(wardenService);
         schedulerThread.start();
     }
 
@@ -187,6 +223,22 @@ public class DozorBot extends TelegramLongPollingBot {
         /*SendMessage sendMessage = new SendMessage()
                 .setChatId(chatId);*/
 
+        if (command.contains("/pause")) {
+            pause = true;
+            sendMessage(new SendMessage()
+                    .setChatId(chatId)
+                    .setText(TextConstants.PAUSE_MESSAGE));
+            return;
+        }
+
+        if (command.contains("/resume")) {
+            pause = false;
+            sendMessage(new SendMessage()
+                    .setChatId(chatId)
+                    .setText(TextConstants.RESUME_MESSAGE));
+            return;
+        }
+
         if (sender.getId().longValue()==ADMIN_CHAT_ID&&command.contains("/connect")) {
             String[] params = command.split(" ");
             if (params.length == 3) {
@@ -199,6 +251,12 @@ public class DozorBot extends TelegramLongPollingBot {
         if (StringUtils.isNumeric(command.replace("/","")) && game != null){
             System.out.println(sender.getFirstName()+" "+sender.getLastName()+" отправил код "+command);
 
+            if (pause) {
+                sendMessage(new SendMessage()
+                        .setChatId(chatId)
+                        .setText(TextConstants.GAME_IN_PAUSE)
+                );
+            }
             CodeResponse codeResponse = game.performCode(command, prettyPrintUserName(sender));
             sendMessage(new SendMessage()
                     .setChatId(chatId)
@@ -212,24 +270,24 @@ public class DozorBot extends TelegramLongPollingBot {
             sendMessage(new SendMessage()
                     .setChatId(chatId)
                     .setText("Код принят"));
+            return;
         }
 
-        if (command.contains("/вбей")&&game != null){
-            String[] params = command.split(" ");
-            if (params.length == 2) {
-                CodeResponse codeResponse = game.performCode(params[1], prettyPrintUserName(sender));
-                sendMessage(new SendMessage()
-                        .setChatId(chatId)
-                        .setText(codeResponse.toString())
-                        .setReplyToMessageId(messageId));
-            }
+        if (command.contains("/вбей") && game != null && !pause){
+            CodeResponse codeResponse = game.performCode(command.replace("/вбей ",""), prettyPrintUserName(sender));
+            sendMessage(new SendMessage()
+                    .setChatId(chatId)
+                    .setText(codeResponse.toString())
+                    .setReplyToMessageId(messageId));
             return;
         }
 
         if (command.equals("/help")){
             sendMessage(new SendMessage()
                     .setChatId(chatId)
-                    .setText(HELP_TEXT));
+                    .setText(HELP_TEXT)
+                    .enableMarkdown(true)
+            );
             return;
         }
 
@@ -256,6 +314,12 @@ public class DozorBot extends TelegramLongPollingBot {
                     .setChatId(chatId)
                     .setText(game == null ? NO_CONNECTION : game.getTime()));
             return;
+        }
+
+        if (!stopText.isEmpty()) {
+            sendMessage(new SendMessage()
+                    .setChatId(chatId)
+                    .setText(stopText));
         }
 
     }

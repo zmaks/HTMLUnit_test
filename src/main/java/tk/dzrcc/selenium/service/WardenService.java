@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
  * Created by mazh0416 on 6/26/2017.
  */
 public class WardenService implements Runnable{
-    private static final String OPEN_SPOILER_MESSAGE = "Открыт спойлер! Ща пришлю скрин...";
+    private static final String OPEN_SPOILER_MESSAGE = "Открыт спойлер! Сейчас будет скрин...";
     private static final String NEW_TASK_MESSAGE = "Выдано задание №";
     private static final String SPOILER_MESSAGE = "\nВ задании спойлер.";
     private WardenGame game;
@@ -37,6 +37,8 @@ public class WardenService implements Runnable{
     private static final String LEVEL_STRING = "Время на уровне: ";
     private static Pattern patternTime = Pattern.compile(LEVEL_STRING + "\\d{2}:\\d{2}:\\d{2}");
     private static Pattern patternAdv = Pattern.compile("Подсказка .+" + LEVEL_STRING);
+    private static Pattern patternGPS = Pattern.compile("\\d\\d\\.\\d{3,15}( |,) *\\d\\d\\.\\d{3,15}");
+    private static Pattern patternURL = Pattern.compile("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,3}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)");
 
     public WardenService(String authLink, String gameLogin, String gamePass, DozorBot bot) {
         this.bot = bot;
@@ -127,6 +129,7 @@ public class WardenService implements Runnable{
         if (game.getSpoilerStatus().equals(SpoilerStatus.NOT_PASSED_SPOILER) && !withSpoiler(driver)) {
             bot.sendToTelegram(OPEN_SPOILER_MESSAGE);
             sendScreenshot(driver, "spoiler" + taskNum);
+            checkCoordinates(driver);
             game.setSpoilerStatus(SpoilerStatus.PASSED_SPOILER);
         }
     }
@@ -154,8 +157,10 @@ public class WardenService implements Runnable{
                 game.setHintStatus(HintStatus.FIRST_HINT_3_MIN);
                 boolean withSpoiler = withSpoiler(driver);
                 game.setSpoilerStatus(withSpoiler ? SpoilerStatus.NOT_PASSED_SPOILER : SpoilerStatus.NO_SPOILER);
-
                 notificateAboutNewTask(driver, taskNum, withSpoiler);
+
+                checkURL(driver);
+                checkCoordinates(driver);
             } else {
                 performSpoilerCheck(driver, game, taskNum);
                 performHintCheck(driver, game);
@@ -169,12 +174,61 @@ public class WardenService implements Runnable{
 
     }
 
+    private void checkCoordinates(WebDriver driver) {
+        WebElement task;
+        try {
+            task = driver.findElement(By.className("zad"));
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        System.out.println(task.getText());
+        Matcher matcher = patternGPS.matcher(task.getText());
+        while (matcher.find()){
+            String text =  matcher.group();
+            System.out.println(text);
+            String[] pos = text
+                    .replaceAll("( +|,)", ",")
+                    .replaceAll(",+",",")
+                    .split(",");
+            System.out.println(pos.length +" --- "+ pos);
+            if (pos.length == 2) {
+                Float lat = null;
+                Float lng = null;
+                try {
+                    lat = Float.parseFloat(pos[0]);
+                    lng = Float.parseFloat(pos[1]);
+                    bot.sendToTelegram("Координаты в задании:\n"+text);
+                    bot.sendToTelegram(lat, lng);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void checkURL(WebDriver driver) {
+        WebElement task;
+        try {
+            task = driver.findElement(By.className("zad"));
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        Matcher matcher = patternURL.matcher(task.getText());
+        while (matcher.find()){
+            bot.sendLinkToTelegram("Ссылка в задании:\n"+matcher.group());
+        }
+    }
+
     private void notificateAboutNewTask(WebDriver driver, String taskNum, boolean withSpoiler) {
         String message = NEW_TASK_MESSAGE + taskNum;
         if (withSpoiler) {
             message += SPOILER_MESSAGE;
         }
-        message += "\nЩа пришлю скрин...";
+        message += "\nСейчас будет скрин...";
         bot.sendToTelegram(message);
         sendScreenshot(driver, "task" + taskNum);
     }
@@ -209,7 +263,7 @@ public class WardenService implements Runnable{
             bot.sendToTelegram(name, is);
             //FileUtils.copyFile(screenshot, new File("screenshot.png"));
 
-        } catch (IOException e) {
+        } catch (IOException | NoSuchElementException e) {
             e.printStackTrace();
         }
     }

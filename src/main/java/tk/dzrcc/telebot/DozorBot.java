@@ -44,7 +44,7 @@ public class DozorBot extends TelegramLongPollingBot {
         try {
             if (update.hasMessage()) {
                 Message message = update.getMessage();
-                /*if (message.getChatId().equals(ADMIN_CHAT_ID)) {
+                if (message.getChatId().equals(ADMIN_CHAT_ID)) {
                     handleAdminMessage(message);
                 } else {
                     if (message.getChat().isGroupChat()) {
@@ -57,9 +57,8 @@ public class DozorBot extends TelegramLongPollingBot {
                     } else {
                         forbidden(message.getChatId());
                     }
-                }*/
+                }
 
-                // TODO: 6/27/2017  
                 chatId = ADMIN_CHAT_ID;
                 handleMessage(message);
 
@@ -189,15 +188,17 @@ public class DozorBot extends TelegramLongPollingBot {
         return m;
     }
 
-    private void connectSelenium(String login, String pass){
+    private void connectSelenium(String gameLogin, String gamePass){
         if (schedulerThread != null && schedulerThread.isAlive()){
             schedulerThread.stop();
             schedulerThread = null;
         }
         WardenService wardenService = new WardenService(
                 AUTH_LINK,
-                login,
-                pass,
+                "Zubr3",
+                "121212",
+                gameLogin,
+                gamePass,
                 this
         );
         schedulerThread = new Thread(wardenService);
@@ -256,12 +257,13 @@ public class DozorBot extends TelegramLongPollingBot {
                         .setChatId(chatId)
                         .setText(TextConstants.GAME_IN_PAUSE)
                 );
+            } else {
+                CodeResponse codeResponse = game.performCode(command, prettyPrintUserName(sender));
+                sendMessage(new SendMessage()
+                        .setChatId(chatId)
+                        .setText(codeResponse.toString())
+                        .setReplyToMessageId(messageId));
             }
-            CodeResponse codeResponse = game.performCode(command, prettyPrintUserName(sender));
-            sendMessage(new SendMessage()
-                    .setChatId(chatId)
-                    .setText(codeResponse.toString())
-                    .setReplyToMessageId(messageId));
 
             return;
         }
@@ -273,12 +275,19 @@ public class DozorBot extends TelegramLongPollingBot {
             return;
         }
 
-        if (command.contains("/вбей") && game != null && !pause){
-            CodeResponse codeResponse = game.performCode(command.replace("/вбей ",""), prettyPrintUserName(sender));
-            sendMessage(new SendMessage()
-                    .setChatId(chatId)
-                    .setText(codeResponse.toString())
-                    .setReplyToMessageId(messageId));
+        if (command.contains("/вбей") && game != null){
+            if (pause) {
+                sendMessage(new SendMessage()
+                        .setChatId(chatId)
+                        .setText(TextConstants.GAME_IN_PAUSE)
+                );
+            } else {
+                CodeResponse codeResponse = game.performCode(command.replace("/вбей ", ""), prettyPrintUserName(sender));
+                sendMessage(new SendMessage()
+                        .setChatId(chatId)
+                        .setText(codeResponse.toString())
+                        .setReplyToMessageId(messageId));
+            }
             return;
         }
 

@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static tk.dzrcc.TextConstants.*;
+import static tk.dzrcc.Utils.buildGameLink;
 import static tk.dzrcc.game.CodesAnalyzer.analyzeCodes;
 import static tk.dzrcc.game.CodesAnalyzer.getLevelStatistic;
 import static tk.dzrcc.game.CodesAnalyzer.getSectorStatistic;
@@ -30,7 +31,7 @@ public class Game {
 
 
     public Game(String url, String login, String pass, String gameLogin, String gamePass) {
-        webService = new WebService(url, login, pass, url+"/go", gameLogin, gamePass);
+        webService = new WebService(url, login, pass, buildGameLink(url, gameLogin, gamePass) /*url+"/go"*/, gameLogin, gamePass);
 
         //init();
     }

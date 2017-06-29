@@ -31,8 +31,8 @@ public class WardenService implements Runnable{
     private DozorBot bot;
     private boolean noTask = false;
 
-    private static final String LOGIN = "Zubrrr";
-    private static final String PASS = "121212";
+    private String login;
+    private String pass;
     private static Pattern pattern = Pattern.compile("Задание \\d+");
     private static final String LEVEL_STRING = "Время на уровне: ";
     private static Pattern patternTime = Pattern.compile(LEVEL_STRING + "\\d{2}:\\d{2}:\\d{2}");
@@ -40,7 +40,9 @@ public class WardenService implements Runnable{
     private static Pattern patternGPS = Pattern.compile("\\d\\d\\.\\d{3,15}( |,) *\\d\\d\\.\\d{3,15}");
     private static Pattern patternURL = Pattern.compile("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,3}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)");
 
-    public WardenService(String authLink, String gameLogin, String gamePass, DozorBot bot) {
+    public WardenService(String authLink, String login, String pass, String gameLogin, String gamePass, DozorBot bot) {
+        this.login = login;
+        this.pass = pass;
         this.bot = bot;
         this.game = new WardenGame(authLink, gameLogin, gamePass);
         System.setProperty("webdriver.gecko.driver", "C:\\Program Files (x86)\\gecko\\geckodriver.exe");
@@ -54,13 +56,13 @@ public class WardenService implements Runnable{
     private void auth(WardenGame game) {
         System.out.println("auth");
         driver.get(game.getAuthLink());
-        driver.findElement(By.name("login")).sendKeys(LOGIN);
+        driver.findElement(By.name("login")).sendKeys(login);
         WebElement webElement = driver.findElement(By.name("password"));
-        webElement.sendKeys(PASS);
+        webElement.sendKeys(pass);
         webElement.submit();
         (new WebDriverWait(driver, 10)).until(new ExpectedCondition<Boolean>() {
             public Boolean apply(WebDriver d) {
-                return d.findElement(By.className("grayBox")).getText().contains(LOGIN);
+                return d.findElement(By.className("grayBox")).getText().contains(login);
             }
         });
 
@@ -68,19 +70,9 @@ public class WardenService implements Runnable{
 
     @Override
     public void run() {
-        // TODO: 6/27/2017
-        int i = 0;
         while (true) {
-            System.out.println("execute");
-            //driver.get(game.getGameLink());
-            driver.get("http://dzrcc.tk/test/q/"+i+".html");
-            i++;
-            //driver.get(game.getAuthLink());
-            //bot.sendToTelegram(game.getGameLink());
-            // TODO: 6/27/2017  
-            //sendScreenshot(driver, "image" + (new Random()).nextInt(100));
-
-            // TODO: 6/26/2017
+            System.out.println("execute " + game.getGameLink());
+            driver.get(game.getGameLink());
             performTaskCheck(driver, game);
             try {
                 Thread.sleep(10000L);
@@ -102,8 +94,8 @@ public class WardenService implements Runnable{
             } catch (ParseException e) {
                 e.printStackTrace();
             }
-            java.util.Calendar calendar = GregorianCalendar.getInstance(); // creates a new calendar instance
-            calendar.setTime(date);   // assigns calendar to given date
+            java.util.Calendar calendar = GregorianCalendar.getInstance();
+            calendar.setTime(date);
             int hour = calendar.get(java.util.Calendar.HOUR);
             int min = calendar.get(java.util.Calendar.MINUTE);
             HintStatus currentHintStatus = game.getHintStatus();
@@ -199,7 +191,7 @@ public class WardenService implements Runnable{
                 try {
                     lat = Float.parseFloat(pos[0]);
                     lng = Float.parseFloat(pos[1]);
-                    bot.sendToTelegram("Координаты в задании:\n"+text);
+                    bot.sendToTelegram(text);
                     bot.sendToTelegram(lat, lng);
                 } catch (NumberFormatException e) {
                     e.printStackTrace();
@@ -241,7 +233,6 @@ public class WardenService implements Runnable{
         try {
             fullImg = ImageIO.read(screenshot);
 
-            // TODO: 6/27/2017  
             WebElement ele = driver.findElement(By.className("zad"));
             WebElement msg = driver.findElement(By.className("sysmsg"));
             Point point = ele.getLocation();
@@ -254,7 +245,7 @@ public class WardenService implements Runnable{
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             ImageIO.write(eleScreenshot, "png", os);
 
-           /* // TODO: 6/26/2017
+           /*
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             ImageIO.write(fullImg, "png", os);
             //--------*/

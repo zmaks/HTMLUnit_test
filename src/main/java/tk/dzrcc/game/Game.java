@@ -30,7 +30,7 @@ public class Game {
 
 
     public Game(String url, String login, String pass, String gameLogin, String gamePass) {
-        webService = new WebService(url, login, pass, url+"/go", gameLogin, gamePass);
+        webService = new WebService(url, login, pass, url+"go", gameLogin, gamePass);
 
         //init();
     }
@@ -81,32 +81,40 @@ public class Game {
     }
 
     public synchronized CodeResponse performCode(String code, String player) {
-        Code inputCode;
+        Code inputCode = null;
         String sysMessage;
+        String taskNumber;
         try {
             gameLoad();
 
             HtmlPage codePage;
             codePage = webService.inputCode(code);
 
+            taskNumber = parseTaskNumber(codePage);
             sysMessage = parseSysMessage(codePage);
             System.out.println(sysMessage);
 
-            inputCode = analyzeCodes(parseCodePage(codePage), sectors, code);
+            if (currentTaskNumber.equals(taskNumber)) {
+                inputCode = analyzeCodes(parseCodePage(codePage), sectors, code);
+            }
         } catch (DozorBotException | IOException e) {
             return new CodeResponse(e.getMessage(), null);
         }
 
-        String key = sysMessage.contains("Код не принят") ? NOT_TAKEN_CODE : TAKEN_CODE;
+        String key = sysMessage.toLowerCase().contains("код не принят") ? NOT_TAKEN_CODE : TAKEN_CODE;
+        sysMessage = key + "\n" + sysMessage;
         if (inputCode == null) {
+            if (taskNumber == null) {
+                return new CodeResponse(sysMessage+"\n\nПоходу это было последнее задание.", null);
+            }
             GottenCode gottenCode = gottenCodes.stream()
                     .filter(x -> x.getCode().equals(code))
                     .findFirst()
                     .orElse(null);
-            return new CodeResponse(key+"\n"+sysMessage, null, gottenCode);
+            return new CodeResponse(sysMessage, null, gottenCode);
         } else {
             gottenCodes.add(new GottenCode(code, player, new Date()));
-            CodeResponse codeResponse = new CodeResponse(key+"\n"+sysMessage, inputCode);
+            CodeResponse codeResponse = new CodeResponse(sysMessage, inputCode);
             codeResponse.setLevelStat(getLevelStatistic(sectors, inputCode.getSector(), inputCode.getLevel()));
             codeResponse.setSectorStat(getSectorStatistic(sectors, inputCode.getSector()));
             return codeResponse;

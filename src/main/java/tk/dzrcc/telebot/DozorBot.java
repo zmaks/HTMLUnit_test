@@ -26,12 +26,14 @@ public class DozorBot extends TelegramLongPollingBot {
 
     private static final Long ADMIN_CHAT_ID = 183375382L;
     private static final String TOKEN = "182854264:AAGIoBFz0VfwAIlWJwHPplZ2nH-JKHDzfNQ";
+    private boolean pause = false;
 
 
     public void onUpdateReceived(Update update) {
         try {
             if (update.hasMessage()) {
                 Message message = update.getMessage();
+
                 if (message.getChatId().equals(ADMIN_CHAT_ID)) {
                     handleAdminMessage(message);
                 } else {
@@ -94,6 +96,7 @@ public class DozorBot extends TelegramLongPollingBot {
                 .setText(INIT_CONNECTION));
         game = new Game(
                 "http://classic.dzzzr.ru/vrn/",
+                //"http://classic.dzzzr.ru/mega-vlg/",
                 "Zubr2",
                 "121212",
                 login,
@@ -125,12 +128,29 @@ public class DozorBot extends TelegramLongPollingBot {
         Long chatId = message.getChatId();
         User sender = message.getFrom();
         Integer messageId = message.getMessageId();
-        String command = messageText.replaceFirst("/", "");
+        String command = messageText;
         //System.out.println(command);
         /*SendMessage sendMessage = new SendMessage()
                 .setChatId(chatId);*/
 
-        if (sender.getId().longValue()==ADMIN_CHAT_ID&&command.contains("connect")) {
+
+        if (command.contains("/pause")) {
+            pause = true;
+            sendMessage(new SendMessage()
+                    .setChatId(chatId)
+                    .setText(TextConstants.PAUSE_MESSAGE));
+            return;
+        }
+
+        if (command.contains("/resume")) {
+            pause = false;
+            sendMessage(new SendMessage()
+                    .setChatId(chatId)
+                    .setText(TextConstants.RESUME_MESSAGE));
+            return;
+        }
+
+        if (sender.getId().longValue()==ADMIN_CHAT_ID&&command.contains("/connect")) {
             String[] params = command.split(" ");
             if (params.length == 3) {
 
@@ -139,14 +159,20 @@ public class DozorBot extends TelegramLongPollingBot {
             }
         }
 
-        if (StringUtils.isNumeric(command) && game != null){
+        if (StringUtils.isNumeric(command.replace("/","")) && game != null){
             System.out.println(sender.getFirstName()+" "+sender.getLastName()+" отправил код "+command);
-
-            CodeResponse codeResponse = game.performCode(command, prettyPrintUserName(sender));
-            sendMessage(new SendMessage()
-                    .setChatId(chatId)
-                    .setText(codeResponse.toString())
-                    .setReplyToMessageId(messageId));
+            if (pause) {
+                sendMessage(new SendMessage()
+                        .setChatId(chatId)
+                        .setText(TextConstants.GAME_IN_PAUSE)
+                );
+            } else {
+                CodeResponse codeResponse = game.performCode(command, prettyPrintUserName(sender));
+                sendMessage(new SendMessage()
+                        .setChatId(chatId)
+                        .setText(codeResponse.toString())
+                        .setReplyToMessageId(messageId));
+            }
 
             return;
         }
@@ -157,19 +183,29 @@ public class DozorBot extends TelegramLongPollingBot {
                     .setText("Код принят"));
         }
 
-        if (command.contains("вбей")&&game != null){
+        if (command.contains("/вбей")&&game != null){
             String[] params = command.split(" ");
-            if (params.length == 2) {
-                CodeResponse codeResponse = game.performCode(params[1], prettyPrintUserName(sender));
+            if (pause) {
                 sendMessage(new SendMessage()
                         .setChatId(chatId)
-                        .setText(codeResponse.toString())
-                        .setReplyToMessageId(messageId));
+                        .setText(TextConstants.GAME_IN_PAUSE)
+                );
+            } else {
+                if (params.length == 2) {
+                    CodeResponse codeResponse = game.performCode(command.replace("/вбей ", ""), prettyPrintUserName(sender));
+                    sendMessage(new SendMessage()
+                            .setChatId(chatId)
+                            .setText(codeResponse.toString())
+                            .setReplyToMessageId(messageId));
+
+                }
             }
             return;
         }
 
-        if (command.equals("help")){
+
+
+        if (command.contains("/help")){
             sendMessage(new SendMessage()
                     .setChatId(chatId)
                     .setText(HELP_TEXT));
@@ -186,7 +222,7 @@ public class DozorBot extends TelegramLongPollingBot {
             return;
         }*/
 
-        if (command.equals("status")){
+        if (command.contains("/status")){
             System.out.println(sender.getFirstName()+" "+sender.getLastName()+" запросил статус игры");
             sendMessage(new SendMessage()
                     .setChatId(chatId)
@@ -194,10 +230,34 @@ public class DozorBot extends TelegramLongPollingBot {
             return;
         }
 
-        if (command.equals("time")){
+        if (command.contains("/time")){
             sendMessage(new SendMessage()
                     .setChatId(chatId)
                     .setText(game == null ? NO_CONNECTION : game.getTime()));
+            return;
+        }
+
+        if (command.contains("start") || command.contains("stop")||command.contains("screen")){
+            return;
+        }
+
+        if (command.contains("/")&&game != null){
+            String[] params = command.split(" ");
+            if (pause) {
+                sendMessage(new SendMessage()
+                        .setChatId(chatId)
+                        .setText(TextConstants.GAME_IN_PAUSE)
+                );
+            } else {
+
+                    CodeResponse codeResponse = game.performCode(command.replace("/", ""), prettyPrintUserName(sender));
+                    sendMessage(new SendMessage()
+                            .setChatId(chatId)
+                            .setText(codeResponse.toString())
+                            .setReplyToMessageId(messageId));
+
+
+            }
             return;
         }
 

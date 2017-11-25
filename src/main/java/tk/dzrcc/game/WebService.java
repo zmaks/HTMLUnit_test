@@ -41,12 +41,14 @@ public class WebService {
     }
 
     public HtmlPage getGamePage() throws IOException {
-        DefaultCredentialsProvider provider = new DefaultCredentialsProvider();
+
+        // Если менять, то убрать метод getAuthLink !!!
+
+        /*DefaultCredentialsProvider provider = new DefaultCredentialsProvider();
         provider.addCredentials(gameLogin, gamePass);
         webClient.setCredentialsProvider(provider);
+        return webClient.getPage(gameUrl);*/
         return webClient.getPage(gameUrl);
-
-        //return webClient.getPage("http://dzrcc.tk/test/222.html");
     }
 
     public HtmlPage login() throws IOException, DozorBotException {
